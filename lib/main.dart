@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-
-
+import 'package:flutter/material.dart';
+import 'admin_dashboard_page.dart';
 
 void main() => runApp(CSOApp());
+
 class CSOApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -60,10 +60,18 @@ class _LoginPageState extends State<LoginPage> {
         _loginAttempts = 0;
         _isBlocked = false;
       });
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => MainHomePage(user: username)),
-      );
+
+      if (username == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AdminDashboardPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MainHomePage(user: username)),
+        );
+      }
     } else {
       setState(() {
         _loginAttempts++;
@@ -110,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login User')),
+      appBar: AppBar(title: Text('Login')),
       body: Padding(
         padding: EdgeInsets.all(16),
         child: Center(
@@ -157,52 +165,44 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// ==================== ADMIN PAGE ====================
-class AdminPage extends StatefulWidget {
-  @override
-  _AdminPageState createState() => _AdminPageState();
-}
+// ==================== ADMIN DASHBOARD PAGE ====================
+class AdminDashboardPage extends StatelessWidget {
+  final List<String> checklistTugas = [
+    'Menyapu lantai kelas',
+    'Mengepel lantai kantor',
+    'Membersihkan meja guru'
+  ];
 
-class _AdminPageState extends State<AdminPage> {
-  List<String> semuaLaporan = [
+  final List<String> laporanKerusakan = [
     'Kipas angin rusak di kelas 7A',
     'Kaca pecah di lantai 2',
     'Sampah menumpuk di taman belakang'
   ];
 
-  Map<String, bool> laporanStatus = {};
-
-  @override
-  void initState() {
-    super.initState();
-    for (var laporan in semuaLaporan) {
-      laporanStatus[laporan] = false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Admin Dashboard'),
-      ),
+      appBar: AppBar(title: Text('Admin - Hasil Input User')),
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
-          Text('Daftar Laporan Kerusakan',
+          Text('Checklist Tugas Harian',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           SizedBox(height: 10),
-          ...semuaLaporan.map((laporan) => Card(
-            child: CheckboxListTile(
+          ...checklistTugas.map((tugas) => Card(
+            child: ListTile(
+              leading: Icon(Icons.check_box, color: Colors.green),
+              title: Text(tugas),
+            ),
+          )),
+          SizedBox(height: 30),
+          Text('Laporan Kerusakan',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          ...laporanKerusakan.map((laporan) => Card(
+            child: ListTile(
+              leading: Icon(Icons.report_problem, color: Colors.red),
               title: Text(laporan),
-              subtitle: Text('Status: ' +
-                  (laporanStatus[laporan]! ? 'Selesai' : 'Belum Ditindaklanjuti')),
-              value: laporanStatus[laporan],
-              onChanged: (val) {
-                setState(() {
-                  laporanStatus[laporan] = val!;
-                });
-              },
             ),
           )),
         ],
@@ -317,7 +317,7 @@ class _MainHomePageState extends State<MainHomePage> {
   }
 
 
-  final List<Widget> _pages = [JadwalPage(), ChecklistPage(), LaporanPage(), AdminPage(), DashboardPage()];
+  final List<Widget> _pages = [JadwalPage(), ChecklistPage(), LaporanPage(),  ];
   final List<String> _titles = [
     'Jadwal Harian',
     'Checklist Tugas',
@@ -368,83 +368,6 @@ class _MainHomePageState extends State<MainHomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard',
           ),
         ],
-      ),
-    );
-  }
-}
-// ==================== DASHBOARD =================
-class DashboardPage extends StatefulWidget {
-  @override
-  _DashboardPageState createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  int totalChecklistHariIni = 5;
-  int checklistDikerjakanHariIni = 4;
-
-  int jumlahLaporanMingguIni = 3;
-
-  double get progressKebersihan {
-    if (totalChecklistHariIni == 0) return 0;
-    return checklistDikerjakanHariIni / totalChecklistHariIni;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Dashboard Ringkasan")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildStatCard("Checklist Hari Ini",
-                "$checklistDikerjakanHariIni dari $totalChecklistHariIni", Icons.check_circle, Colors.green),
-            SizedBox(height: 12),
-            _buildStatCard("Laporan Masuk Minggu Ini",
-                "$jumlahLaporanMingguIni laporan", Icons.report, Colors.orange),
-            SizedBox(height: 12),
-            _buildProgressCard("Progress Kebersihan", progressKebersihan),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: ListTile(
-        leading: Icon(icon, color: color, size: 40),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(value, style: TextStyle(fontSize: 16)),
-      ),
-    );
-  }
-
-  Widget _buildProgressCard(String title, double progress) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 12,
-              backgroundColor: Colors.grey[300],
-              color: Colors.green,
-            ),
-            SizedBox(height: 8),
-            Text("${(progress * 100).toStringAsFixed(1)}%",
-                style: TextStyle(fontSize: 16)),
-          ],
-        ),
       ),
     );
   }
@@ -541,31 +464,79 @@ class _ChecklistPageState extends State<ChecklistPage> {
     },
   };
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      children: checklist.entries.map((entry) {
-        return Card(
-          margin: EdgeInsets.all(12),
-          child: ExpansionTile(
-            title: Text(entry.key,
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            children: entry.value.keys.map((task) {
-              return CheckboxListTile(
-                title: Text(task),
-                value: entry.value[task],
-                onChanged: (val) {
-                  setState(() {
-                    entry.value[task] = val!;
-                  });
-                },
-              );
-            }).toList()
-          ),
-        );
-      }).toList(),
+  void kirimTugasHarian() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Tugas harian berhasil dikirim!")),
     );
 
+    setState(() {
+      for (var kategori in checklist.keys) {
+        for (var tugas in checklist[kategori]!.keys) {
+          checklist[kategori]![tugas] = false;
+        }
+      }
+    });
+  }
+
+  bool adaYangDicentang() {
+    for (var kategori in checklist.values) {
+      if (kategori.containsValue(true)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            children: checklist.entries.map((entry) {
+              return Card(
+                margin: EdgeInsets.all(12),
+                child: ExpansionTile(
+                  title: Text(entry.key,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  children: entry.value.keys.map((task) {
+                    return CheckboxListTile(
+                      title: Text(task),
+                      value: entry.value[task],
+                      onChanged: (val) {
+                        setState(() {
+                          entry.value[task] = val!;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (!adaYangDicentang()) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Belum ada tugas yang dicentang")),
+                );
+              } else {
+                kirimTugasHarian();
+              }
+            },
+            icon: Icon(Icons.send),
+            label: Text("Kirim Tugas Harian"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              minimumSize: Size(double.infinity, 48),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
