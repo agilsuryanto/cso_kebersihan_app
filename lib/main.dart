@@ -1,15 +1,36 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'admin_dashboard_page.dart';
+import 'checklist_page.dart';
+import 'jadwal_page.dart';
+import 'placeholder_page.dart';
+import 'package:image_picker/image_picker.dart';
+
 
 void main() => runApp(CSOApp());
 
-class CSOApp extends StatelessWidget {
+class CSOApp extends StatefulWidget {
+  @override
+  State<CSOApp> createState() => _CSOAppState();
+}
+
+class _CSOAppState extends State<CSOApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CSO & Kebersihan',
+      themeMode: _themeMode,
       theme: ThemeData(
+        brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         scaffoldBackgroundColor: Color(0xFFFFFCFC),
         appBarTheme: AppBarTheme(
@@ -19,10 +40,27 @@ class CSOApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: LoginPage(),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.dark),
+        scaffoldBackgroundColor: Colors.black,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.grey[900],
+          foregroundColor: Colors.white,
+        ),
+        useMaterial3: true,
+      ),
+      home: LoginPage(toggleTheme: toggleTheme),
+      routes: {
+        '/dashboard': (context) => AdminDashboardPage(adminName: 'Admin'),
+        '/laporan': (context) => PlaceholderPage(title: 'Laporan Kerusakan'),
+        '/riwayat': (context) => PlaceholderPage(title: 'Riwayat Tugas & Laporan'),
+        '/akun': (context) => PlaceholderPage(title: 'Manajemen Akun'),
+      },
     );
   }
 }
+
 
 Map<String, String> akunTerdaftar = {
   'admin': '1234',
@@ -31,9 +69,16 @@ Map<String, String> akunTerdaftar = {
 
 // ==================== LOGIN PAGE ====================
 class LoginPage extends StatefulWidget {
+  final VoidCallback toggleTheme;
+
+  LoginPage({required this.toggleTheme});
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
+
+
+
 
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController usernameController = TextEditingController();
@@ -64,12 +109,12 @@ class _LoginPageState extends State<LoginPage> {
       if (username == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => AdminDashboardPage()),
+          MaterialPageRoute(builder: (_) => AdminDashboardPage(adminName: username)),
         );
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => MainHomePage(user: username)),
+          MaterialPageRoute(builder: (_) => MainHomePage(user: username, toggleTheme: widget.toggleTheme)),
         );
       }
     } else {
@@ -165,52 +210,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// ==================== ADMIN DASHBOARD PAGE ====================
-class AdminDashboardPage extends StatelessWidget {
-  final List<String> checklistTugas = [
-    'Menyapu lantai kelas',
-    'Mengepel lantai kantor',
-    'Membersihkan meja guru'
-  ];
-
-  final List<String> laporanKerusakan = [
-    'Kipas angin rusak di kelas 7A',
-    'Kaca pecah di lantai 2',
-    'Sampah menumpuk di taman belakang'
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Admin - Hasil Input User')),
-      body: ListView(
-        padding: EdgeInsets.all(16),
-        children: [
-          Text('Checklist Tugas Harian',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          ...checklistTugas.map((tugas) => Card(
-            child: ListTile(
-              leading: Icon(Icons.check_box, color: Colors.green),
-              title: Text(tugas),
-            ),
-          )),
-          SizedBox(height: 30),
-          Text('Laporan Kerusakan',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          ...laporanKerusakan.map((laporan) => Card(
-            child: ListTile(
-              leading: Icon(Icons.report_problem, color: Colors.red),
-              title: Text(laporan),
-            ),
-          )),
-        ],
-      ),
-    );
-  }
-}
-
 // ==================== REGISTER PAGE ====================
 class RegisterPage extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
@@ -277,11 +276,11 @@ class RegisterPage extends StatelessWidget {
   }
 }
 
-
 // ==================== MAIN HOMEPAGE ====================
 class MainHomePage extends StatefulWidget {
   final String user;
-  MainHomePage({required this.user});
+  final VoidCallback toggleTheme;
+  MainHomePage({required this.user, required this.toggleTheme});
 
   @override
   _MainHomePageState createState() => _MainHomePageState();
@@ -289,7 +288,6 @@ class MainHomePage extends StatefulWidget {
 
 class _MainHomePageState extends State<MainHomePage> {
   int _currentIndex = 0;
-
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -305,7 +303,7 @@ class _MainHomePageState extends State<MainHomePage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => LoginPage()),
+                MaterialPageRoute(builder: (_) => LoginPage(toggleTheme: widget.toggleTheme)),
                     (route) => false,
               );
             },
@@ -316,8 +314,7 @@ class _MainHomePageState extends State<MainHomePage> {
     );
   }
 
-
-  final List<Widget> _pages = [JadwalPage(), ChecklistPage(), LaporanPage(),  ];
+  final List<Widget> _pages = [JadwalPage(), ChecklistPage(), LaporanPage()];
   final List<String> _titles = [
     'Jadwal Harian',
     'Checklist Tugas',
@@ -339,6 +336,10 @@ class _MainHomePageState extends State<MainHomePage> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.brightness_6),
+            onPressed: widget.toggleTheme,
+          ),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
@@ -365,177 +366,8 @@ class _MainHomePageState extends State<MainHomePage> {
           BottomNavigationBarItem(
               icon: Icon(Icons.check_box), label: 'Checklist'),
           BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Laporan'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard',
-          ),
         ],
       ),
-    );
-  }
-}
-
-// ==================== JADWAL ====================
-class JadwalPage extends StatelessWidget {
-  final Map<String, List<String>> jadwal = {
-    'Area Kelas': [
-      'Menyapu lantai',
-      'Mengepel lantai',
-      'Membersihkan dan Mengeelap Meja + Kursi',
-      'Membersikan Langit langit',
-      'Mengelap Kaca dan Dinding'
-    ],
-    'Gedung Bagian Dalam': [
-      'Membersihkan Tralis, Dinding dan Lantai',
-      'Menyapu lantai',
-      'Mengepel lantai',
-      'Membersikan Tangga',
-      'Membersihkan Plafon',
-      'Membersihkan Jendela Kaca',
-      'Membersihkan Dinding dari noda',
-      'Membersihkan Meja Wastafel',
-      'Menyiram Tanaman',
-      'Merapikan dan Membersihkan Tanaman',
-      'Membuang Sampah',
-      'Memasang Plastik Sampah',
-      'Membersihkan Tempat Sampah'
-    ],
-    'Gedung Bagian Luar': [
-      'Membersihkan kaca jendela',
-      'Membersihkan atap',
-      'Menyiram tanaman',
-      'Merapihkan dan Membersihkan Tanaman',
-      'Memasang Plastik Sampah',
-      'Membersihkan Tempat Sampah'
-    ],
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      children: jadwal.entries.map((entry) {
-        return Card(
-          margin: EdgeInsets.all(12),
-          child: ExpansionTile(
-            title: Text(entry.key,
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            children:
-            entry.value.map((task) => ListTile(title: Text(task))).toList(),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ==================== CHECKLIST ====================
-class ChecklistPage extends StatefulWidget {
-  @override
-  _ChecklistPageState createState() => _ChecklistPageState();
-}
-
-class _ChecklistPageState extends State<ChecklistPage> {
-  final Map<String, Map<String, bool>> checklist = {
-    'Area Kelas': {
-      'Menyapu lantai': false,
-      'Mengepel lantai': false,
-      'Membersihkan meja dan kursi': false,
-    },
-    'Gedung Bagian Dalam': {
-      'Membersihkan tralis, dinding dan lantai': false,
-      'Menyapu lantai': false,
-      'Mengepel lantai': false,
-      'Membersikan Tangga': false,
-      'Membersihkan Plafon': false,
-      'Membersihkan Jendela Kaca': false,
-      'Membersihkan Dinding dari noda': false,
-      'Membersihkan Meja Wastafel': false,
-      'Menyiram Tanaman': false,
-      'Merapikan dan Membersihkan Tanaman': false,
-      'Membuang Sampah': false,
-      'Memasang Plastik Sampah': false,
-      'Membersihkan Tempat Sampah': false,
-    },
-    'Gedung Bagian Luar': {
-      'Membersihkan kaca jendela': false,
-      'Membersihkan atap': false,
-      'Menyiram tanaman': false,
-      'Merapihkan dan Membersihkan Tanaman': false,
-      'Memasang Plastik Sampah': false,
-      'Membersihkan Tempat Sampah': false,
-    },
-  };
-
-  void kirimTugasHarian() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Tugas harian berhasil dikirim!")),
-    );
-
-    setState(() {
-      for (var kategori in checklist.keys) {
-        for (var tugas in checklist[kategori]!.keys) {
-          checklist[kategori]![tugas] = false;
-        }
-      }
-    });
-  }
-
-  bool adaYangDicentang() {
-    for (var kategori in checklist.values) {
-      if (kategori.containsValue(true)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            children: checklist.entries.map((entry) {
-              return Card(
-                margin: EdgeInsets.all(12),
-                child: ExpansionTile(
-                  title: Text(entry.key,
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  children: entry.value.keys.map((task) {
-                    return CheckboxListTile(
-                      title: Text(task),
-                      value: entry.value[task],
-                      onChanged: (val) {
-                        setState(() {
-                          entry.value[task] = val!;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              if (!adaYangDicentang()) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Belum ada tugas yang dicentang")),
-                );
-              } else {
-                kirimTugasHarian();
-              }
-            },
-            icon: Icon(Icons.send),
-            label: Text("Kirim Tugas Harian"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              minimumSize: Size(double.infinity, 48),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -545,45 +377,43 @@ class LaporanPage extends StatefulWidget {
   @override
   _LaporanPageState createState() => _LaporanPageState();
 }
+
 class _LaporanPageState extends State<LaporanPage> {
-  final TextEditingController laporanController = TextEditingController();
+  final TextEditingController deskripsiController = TextEditingController();
+  final TextEditingController lokasiController = TextEditingController();
+  File? _imageFile;
+
   List<Map<String, dynamic>> laporanList = [];
 
-  void submitLaporan() {
-    if (laporanController.text.isNotEmpty) {
+  Future<void> pickImage() async {
+    final pickedFile =
+    await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
       setState(() {
-        laporanList.add({
-          'deskripsi': laporanController.text,
-          'ditindaklanjuti': false,
-        });
-        laporanController.clear();
+        _imageFile = File(pickedFile.path);
       });
     }
   }
 
-  void editLaporan(int index) {
-    laporanController.text = laporanList[index]['deskripsi'];
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Laporan'),
-        content: TextField(controller: laporanController),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Batal')),
-          TextButton(
-              onPressed: () {
-                setState(() {
-                  laporanList[index]['deskripsi'] = laporanController.text;
-                });
-                laporanController.clear();
-                Navigator.pop(context);
-              },
-              child: Text('Simpan')),
-        ],
-      ),
-    );
+  void submitLaporan() {
+    if (deskripsiController.text.isNotEmpty &&
+        lokasiController.text.isNotEmpty &&
+        _imageFile != null) {
+      setState(() {
+        laporanList.add({
+          'lokasi': lokasiController.text,
+          'deskripsi': deskripsiController.text,
+          'foto': _imageFile,
+          'status': 'Menunggu',
+        });
+        deskripsiController.clear();
+        lokasiController.clear();
+        _imageFile = null;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Harap lengkapi semua data dan upload foto.")));
+    }
   }
 
   void deleteLaporan(int index) {
@@ -594,60 +424,93 @@ class _LaporanPageState extends State<LaporanPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: TextField(
-            controller: laporanController,
-            decoration: InputDecoration(
-              labelText: 'Deskripsi Kerusakan',
-              border: OutlineInputBorder(),
-              fillColor: Colors.white,
-              filled: true,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: submitLaporan,
-          child: Text('Kirim Laporan'),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              minimumSize: Size(double.infinity, 48)),
-        ),
-        Divider(),
-        Expanded(
-          child: ListView.builder(
-            itemCount: laporanList.length,
-            itemBuilder: (context, index) {
-              final laporan = laporanList[index];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: ListTile(
-                  leading: Icon(Icons.warning, color: Colors.red),
-                  title: Text(laporan['deskripsi']),
-                  subtitle: Text(laporan['ditindaklanjuti']
-                      ? 'Status: Ditindaklanjuti'
-                      : 'Status: Belum Ditindaklanjuti'),
-                  trailing: laporan['ditindaklanjuti']
-                      ? null
-                      : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () => editLaporan(index)),
-                      IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () => deleteLaporan(index)),
-                    ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Laporan Kerusakan"),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  controller: lokasiController,
+                  decoration: InputDecoration(
+                    labelText: 'Lokasi Kejadian',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              );
-            },
+                SizedBox(height: 10),
+                TextField(
+                  controller: deskripsiController,
+                  decoration: InputDecoration(
+                    labelText: 'Deskripsi Kerusakan',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: pickImage,
+                      icon: Icon(Icons.photo),
+                      label: Text('Upload Foto'),
+                    ),
+                    SizedBox(width: 10),
+                    _imageFile != null
+                        ? Text("✓ Foto terpilih", style: TextStyle(color: Colors.green))
+                        : Text("Belum ada foto")
+                  ],
+                ),
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: submitLaporan,
+                  child: Text('Kirim Laporan'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      minimumSize: Size(double.infinity, 48)),
+                ),
+              ],
+            ),
           ),
-        )
-      ],
+          Divider(),
+          Expanded(
+            child: ListView.builder(
+              itemCount: laporanList.length,
+              itemBuilder: (context, index) {
+                final laporan = laporanList[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    leading: laporan['foto'] != null
+                        ? Image.file(
+                      laporan['foto'],
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                        : Icon(Icons.image_not_supported),
+                    title: Text(laporan['lokasi']),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(laporan['deskripsi']),
+                        Text("Status: ${laporan['status']}"),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () => deleteLaporan(index),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
